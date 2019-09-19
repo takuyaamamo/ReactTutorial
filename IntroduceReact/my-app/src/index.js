@@ -27,63 +27,23 @@ function Square(props) {
 // 下記をコンポーネントと言う
 // BoardコンポーネントはSquareコンポーネントを9個renderする
 class Board extends React.Component {
-  // コンストラクタでthis.stateを設定すると状態を持つことができる。
-  // まずは、状態を初期化する
-  constructor(props) {
-    // サブクラスのコンストラクタを呼ぶ場合常にsuperを呼ぶ必要がある、呼ぶべき
-    super(props);
-    this.state = {
-      // 初期stateのsquaresに9個のnullが9個のマス目に対応する9個のnull値をセットする。
-      squares: Array(9).fill(null),
-      // プレーヤの手番をxIsNext（真偽値）で決める
-      xIsNext: true,
-    }
-  }
-  // handleClickのイベントハンドラを定義する
-  handleClick(i) {
-    // .slice()を読んで配列のコピーを作成する。このミューテーとを伴わないデータの変化を行うことで、複雑な機能を簡単に実装できたり、変更の検出が可能になったり、Reactの再レンダータイミングを決定することも可能となる。これをイミュータビリティと呼ぶ。
-    const squares = this.state.squares.slice();
-    // ゲームの決着がついている場合や、クリックされたマス目が既に埋まっている場合に早期にreturnする
-    if (calculateWinner(squares) || squares[i]) {
-      return;
-    }
-    // xIsNextがtrueのときXが入る、falseのときOが入る
-    squares[i] = this.state.xIsNext ? 'X' : 'O';
-    // this.setStateでsquaresの変数を更新している
-    this.setState({
-      squares: squares,
-      // xIsNextを反転させて更新
-      xIsNext: !this.state.xIsNext,
-    });
-  }
-
-
   renderSquare(i) {
     // <Square />のようにカプセル化されたコンポーネントを呼び出すことが可能
-    // propsとしてvalueという変数にコンストラクタで設定したstateのsquaresの値を格納しSquareに渡す
+    // propsとしてvalueという変数にGameのコンストラクタで設定したstateの更新されたsquaresの値を格納しSquareに渡す
     return (
       <Square
-        value={this.state.squares[i]}
-        // BoardからSquareに関数を渡して、マス目がクリックされた時にその関数を読んでもらうようにする
-        onClick={() => this.handleClick(i)}
+        value={this.props.squares[i]}
+        // BoardからSquareに関数を渡して、マス目がクリックされた時にpropsのonClick(i)の関数を作動させる
+        onClick={() => this.props.onClick(i)}
       />
     );
 
   }
   // renderは描画すべきReact要素（記述するときはJSX）を返す
   render() {
-    // calculateWinner関数を呼び出す
-    const winner = calculateWinner(this.state.squares);
-    let status;
-    if (winner) {
-      status = 'Winner: ' + winner;
-    } else {
-      status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
-    }
     // この中（ reutrn () ）の記述はJSX、コメントアウトの書き方などに注意が必要
     return (
       <div>
-        <div className="status">{status}</div>
         <div className="board-row">
           {this.renderSquare(0)}
           {this.renderSquare(1)}
@@ -106,15 +66,104 @@ class Board extends React.Component {
 
 // Gameコンポーネントはプレースホルダーを描画している。
 class Game extends React.Component {
+  // handleClickのイベントハンドラを定義する
+  handleClick(i) {
+    // historyをrender内に呼び出し
+    // 「時間の巻き戻し」をしてからその時点で新しい着手を起こした場合に、そこから見て「将来」にある履歴を確実に捨てることができる
+    // 0番目からクリックしたstepNumber + 1までをコピー
+    const history = this.state.history.slice(0, this.state.stepNumber + 1);
+    // 最終の手の一個前を現在のcurrentとする
+    const current = history[history.length - 1];
+    // .slice()を読んで配列のコピーを作成する。このミューテートを伴わないデータの変化を行うことで、複雑な機能を簡単に実装できたり、変更の検出が可能になったり、Reactの再レンダータイミングを決定することも可能となる。これをイミュータビリティと呼ぶ。
+    const squares = current.squares.slice();
+    // ゲームの決着がついている場合や、クリックされたマス目が既に埋まっている場合に早期にreturnする
+    if (calculateWinner(squares) || squares[i]) {
+      return;
+    }
+    // xIsNextがtrueのときXが入る、falseのときOが入る
+    squares[i] = this.state.xIsNext ? 'X' : 'O';
+    // this.setStateでsquaresの変数を更新している
+    this.setState({
+      // ここでは、push()を使わずイミュータビリティのconcat()を利用する
+      history: history.concat([{
+        squares: squares,
+      }]),
+      stepNumber: history.length,
+      // xIsNextを反転させて更新
+      xIsNext: !this.state.xIsNext,
+    });
+  }
+
+  jumpTo(step) {
+    this.setState({
+      stepNumber: step,
+      // 2で割り切れる場合偶数によりtrue
+      xIsNext: (step % 2) === 0,
+    });
+  }
+  // コンストラクタでthis.stateを設定すると状態を持つことができる。
+  // まずは、状態を初期化する
+  // 過去のsquaresの配列を、historyの別の配列に保存する。
+  // BoardにあるstateをトップレベルのGameコンポーネントにリフトアップする（データを移動する）
+  constructor(props) {
+    // サブクラスのコンストラクタを呼ぶ場合常にsuperを呼ぶ必要がある、呼ぶべき
+    super(props);
+    // 初期のstateをコンストラクタ内でセットする
+    this.state = {
+      history: [{
+        // 初期stateのsquaresに9個のnullが9個のマス目に対応する9個のnull値をセットする。
+        squares: Array(9).fill(null),
+      }],
+      // 何手目の状態を表す
+      stepNumber: 0,
+      // プレーヤの手番をxIsNext（真偽値）で決める
+      xIsNext: true,
+    };
+  }
+
   render() {
+    // historyをrender内に呼び出し
+    const history = this.state.history;
+    // 最終の手の一個前を現在のcurrentとする
+    const current = history[this.state.stepNumber];
+    // currentに該当するsquaresのcaluculateWinnerを取り出し
+    // calculateWinner関数を呼び出す
+    const winner = calculateWinner(current.squares);
+
+    // mapメソッドを使用し、過去の手順にジャンプするためのボタンを表示させる
+    const moves = history.map((step, move) => {
+      const desc = move ?
+        // moveがあれば下記を代入
+        'Go to move #' + move :
+        // moveがなければ下記を代入
+        'Go to game start';
+      return (
+        // keyはそれぞれのコンポーネントの同一性に関する情報をReactに与え、再レンダー間でstateを保持するか保持しないかを決める。
+        <li key={move}>
+          <button onClick={() => this.jumpTo(move)}>{desc}</button>
+        </li>
+      );
+    });
+    // statusを更新
+    let status;
+    if (winner) {
+      status = 'Winner: ' + winner;
+    } else {
+      status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
+    }
+
     return (
       <div className="game">
         <div className="game-board">
-          <Board />
+          <Board
+            squares={current.squares}
+            onClick={(i) => this.handleClick(i)}
+          />
         </div>
         <div className="game-info">
-          <div>{/* status */}</div>
-          <ol>{/* TODO */}</ol>
+          <div>{status}</div>
+          {/* historyは回数によって増えていく為、クリックに従いolも増えていく */}
+          <ol>{moves}</ol>
         </div>
       </div>
     );
