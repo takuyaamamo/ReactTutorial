@@ -35,15 +35,26 @@ class Board extends React.Component {
     this.state = {
       // 初期stateのsquaresに9個のnullが9個のマス目に対応する9個のnull値をセットする。
       squares: Array(9).fill(null),
+      // プレーヤの手番をxIsNext（真偽値）で決める
+      xIsNext: true,
     }
   }
   // handleClickのイベントハンドラを定義する
   handleClick(i) {
     // .slice()を読んで配列のコピーを作成する。このミューテーとを伴わないデータの変化を行うことで、複雑な機能を簡単に実装できたり、変更の検出が可能になったり、Reactの再レンダータイミングを決定することも可能となる。これをイミュータビリティと呼ぶ。
     const squares = this.state.squares.slice();
-    squares[i] = 'X';
+    // ゲームの決着がついている場合や、クリックされたマス目が既に埋まっている場合に早期にreturnする
+    if (calculateWinner(squares) || squares[i]) {
+      return;
+    }
+    // xIsNextがtrueのときXが入る、falseのときOが入る
+    squares[i] = this.state.xIsNext ? 'X' : 'O';
     // this.setStateでsquaresの変数を更新している
-    this.setState({squares: squares});
+    this.setState({
+      squares: squares,
+      // xIsNextを反転させて更新
+      xIsNext: !this.state.xIsNext,
+    });
   }
 
 
@@ -61,7 +72,14 @@ class Board extends React.Component {
   }
   // renderは描画すべきReact要素（記述するときはJSX）を返す
   render() {
-    const status = 'Next player: X';
+    // calculateWinner関数を呼び出す
+    const winner = calculateWinner(this.state.squares);
+    let status;
+    if (winner) {
+      status = 'Winner: ' + winner;
+    } else {
+      status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
+    }
     // この中（ reutrn () ）の記述はJSX、コメントアウトの書き方などに注意が必要
     return (
       <div>
@@ -109,3 +127,34 @@ ReactDOM.render(
   <Game />,
   document.getElementById('root')
 );
+
+// ヘルパー関数
+// 下記はゲームの決着を表す関数
+function calculateWinner(squares) {
+
+  // 下記の並び順でOかXであれば勝利
+  const lines = [
+    // 横並び
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    // 縦
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    // 斜め
+    [0, 4, 8],
+    [2, 4, 6],
+  ];
+
+  for (let i = 0; i < lines.length; i++) {
+    const [a, b, c] = lines[i];
+    // squareに書く番号を当てはめ、総当たりで調べる
+    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+      // 当てはまったら勝利のsquareを返す
+      return squares[a];
+    }
+  }
+  // 当てはまらなかったらnullを返す
+  return null;
+}
