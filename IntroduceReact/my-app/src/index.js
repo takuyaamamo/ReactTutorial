@@ -87,6 +87,10 @@ class Game extends React.Component {
       // ここでは、push()を使わずイミュータビリティのconcat()を利用する
       history: history.concat([{
         squares: squares,
+        // 行の更新、クリックした場所（iはsquaresに対応）
+        col: (i % 3) + 1,
+        // 列の更新、クリックした場所の小数点をMath.floorで切り捨てする。
+        row: Math.floor(i / 3) + 1,
       }]),
       stepNumber: history.length,
       // xIsNextを反転させて更新
@@ -113,6 +117,10 @@ class Game extends React.Component {
       history: [{
         // 初期stateのsquaresに9個のnullが9個のマス目に対応する9個のnull値をセットする。
         squares: Array(9).fill(null),
+        // 列の保存用
+        col: null,
+        // 行の保存用
+        row: null,
       }],
       // 何手目の状態を表す
       stepNumber: 0,
@@ -134,7 +142,7 @@ class Game extends React.Component {
     const moves = history.map((step, move) => {
       const desc = move ?
         // moveがあれば下記を代入
-        'Go to move #' + move :
+        'Go to move #' + move + '(' + step.col + ',' + step.row + ')' :
         // moveがなければ下記を代入
         'Go to game start';
       return (
