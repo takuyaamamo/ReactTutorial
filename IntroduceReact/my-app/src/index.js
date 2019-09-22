@@ -35,6 +35,8 @@ class Board extends React.Component {
         value={this.props.squares[i]}
         // BoardからSquareに関数を渡して、マス目がクリックされた時にpropsのonClick(i)の関数を作動させる
         onClick={() => this.props.onClick(i)}
+        // map関数を用いる為renderSquareにkeyをつけておく
+        key={i}
       />
     );
 
@@ -44,21 +46,23 @@ class Board extends React.Component {
     // この中（ reutrn () ）の記述はJSX、コメントアウトの書き方などに注意が必要
     return (
       <div>
-        <div className="board-row">
-          {this.renderSquare(0)}
-          {this.renderSquare(1)}
-          {this.renderSquare(2)}
-        </div>
-        <div className="board-row">
-          {this.renderSquare(3)}
-          {this.renderSquare(4)}
-          {this.renderSquare(5)}
-        </div>
-        <div className="board-row">
-          {this.renderSquare(6)}
-          {this.renderSquare(7)}
-          {this.renderSquare(8)}
-        </div>
+        {/* Array(3)で3つの配列[,,,]を作り、fill(0)で0を当てはめる[0,0,0] */}
+        {Array(3).fill(0).map((row, i) => {
+          return(
+            // keyをつけるとreactが再レンダリングする時に変更点のみレンダリングしてくれるようになる
+            <div className="board-row" key={i}>
+              {Array(3).fill(0).map((col, j) => {
+                  return(
+                    // iはrowで0,1,2、jはcolで0,1,2なので
+                    // 1行目は012、2行目は345...となる
+                    this.renderSquare(i * 3 + j)
+                  );
+                })}
+            </div>
+          );
+          console.log('row',row);
+          console.log('i',i);
+        })}
       </div>
     );
   }
