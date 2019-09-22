@@ -97,7 +97,7 @@ class Game extends React.Component {
       xIsNext: !this.state.xIsNext,
     });
   }
-
+  // jumpTo()関数が呼ばれるとstepがstepNumberに代入される
   jumpTo(step) {
     this.setState({
       stepNumber: step,
@@ -148,7 +148,12 @@ class Game extends React.Component {
       return (
         // keyはそれぞれのコンポーネントの同一性に関する情報をReactに与え、再レンダー間でstateを保持するか保持しないかを決める。
         <li key={move}>
-          <button onClick={() => this.jumpTo(move)}>{desc}</button>
+          <button
+            onClick={() => this.jumpTo(move)}
+            // 現在の順番（stepNumber）とmoveが同じ場合boldを入力する
+            // cssでboldを定義する
+            className={this.state.stepNumber === move ? 'bold' : ''}>{desc}
+          </button>
         </li>
       );
     });
