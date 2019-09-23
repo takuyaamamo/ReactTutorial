@@ -101,6 +101,7 @@ class Game extends React.Component {
       xIsNext: !this.state.xIsNext,
     });
   }
+
   // jumpTo()関数が呼ばれるとstepがstepNumberに代入される
   jumpTo(step) {
     this.setState({
@@ -109,6 +110,14 @@ class Game extends React.Component {
       xIsNext: (step % 2) === 0,
     });
   }
+
+  // 昇順降順を切り替える関数
+  toggleAsc() {
+    this.setState({
+      isAsc: !this.state.isAsc,
+    });
+  }
+
   // コンストラクタでthis.stateを設定すると状態を持つことができる。
   // まずは、状態を初期化する
   // 過去のsquaresの配列を、historyの別の配列に保存する。
@@ -125,6 +134,8 @@ class Game extends React.Component {
         col: null,
         // 行の保存用
         row: null,
+        // 昇順降順切り替え用(trueはASCで昇順)
+        isAsc: true,
       }],
       // 何手目の状態を表す
       stepNumber: 0,
@@ -161,6 +172,7 @@ class Game extends React.Component {
         </li>
       );
     });
+
     // statusを更新
     let status;
     if (winner) {
@@ -179,8 +191,11 @@ class Game extends React.Component {
         </div>
         <div className="game-info">
           <div>{status}</div>
+          {/* 降順昇順の切り替えボタンを設置 */}
+          <div><button onClick={() => this.toggleAsc()}>ASC||DESC</button></div>
           {/* historyは回数によって増えていく為、クリックに従いolも増えていく */}
-          <ol>{moves}</ol>
+          {/* state.isAscがtrueの場合昇順、falseの場合降順表示 */}
+          <ol>{this.state.isAsc ? moves : moves.reverse()}</ol>
         </div>
       </div>
     );
