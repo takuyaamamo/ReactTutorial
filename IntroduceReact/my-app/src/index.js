@@ -14,7 +14,11 @@ function Square(props) {
     // 更に,onClickのイベントハンドラがprops.onClick()をコールし、propsで渡されたBoardコンストラクタのthis.handleClick(i)をコールする。
     // React では、イベントを表す props には on[Event] という名前、イベントを処理するメソッドには handle[Event] という名前を付けるのが慣習となっています。
     // props.onClick()でマス目がクリックされた時にpropsで受け取ったonClick()を呼び出している。
-    <button className="square" onClick={props.onClick}>
+    // テンプレートリテラルによりclassNameに'square'とjsを両方代入させる
+    // BoardからpropsされてきたisHighlightによりclassにhighlightを追加するかどうかを判断する
+    <button
+    className={`square ${props.isHighlight ? 'highlight' : ''}`}
+    onClick={props.onClick}>
     {/* JSX内ではjavascriptを中括弧内に記述する、javascriptの変数を扱うことができる */}
     {/* Bordコンポーネントからpropsとしてvalueが渡されいるprops.valueで表示が可能 */}
     {/* propsに保管されたvalueを下記で表示する */}
@@ -27,7 +31,8 @@ function Square(props) {
 // 下記をコンポーネントと言う
 // BoardコンポーネントはSquareコンポーネントを9個renderする
 class Board extends React.Component {
-  renderSquare(i) {
+  // SquareをrenderSquare()として持ってくる
+  renderSquare(i, isHighlight = false) {
     // <Square />のようにカプセル化されたコンポーネントを呼び出すことが可能
     // propsとしてvalueという変数にGameのコンストラクタで設定したstateの更新されたsquaresの値を格納しSquareに渡す
     return (
@@ -37,6 +42,8 @@ class Board extends React.Component {
         onClick={() => this.props.onClick(i)}
         // map関数を用いる為renderSquareにkeyをつけておく
         key={i}
+        // SquareにisHighlightを渡せるようにしておく
+        isHighlight={isHighlight}
       />
     );
 
@@ -55,7 +62,8 @@ class Board extends React.Component {
                   return(
                     // iはrowで0,1,2、jはcolで0,1,2なので
                     // 1行目は012、2行目は345...となる
-                    this.renderSquare(i * 3 + j)
+                    // propsでGameから渡されているhighlightCellsをindexOfが-1でなければtrueを渡す。
+                    this.renderSquare(i * 3 + j, this.props.highlightCells.indexOf(i * 3 + j) !== -1)
                   );
                 })}
             </div>
@@ -150,8 +158,8 @@ class Game extends React.Component {
     // 最終の手の一個前を現在のcurrentとする
     const current = history[this.state.stepNumber];
     // currentに該当するsquaresのcaluculateWinnerを取り出し
-    // calculateWinner関数を呼び出す
-    const winner = calculateWinner(current.squares);
+    // calculateWinner関数を呼び出す。settlementにはwinnerの番号と、勝ったlineが入る。
+    const settlement = calculateWinner(current.squares);
 
     // mapメソッドを使用し、過去の手順にジャンプするためのボタンを表示させる
     const moves = history.map((step, move) => {
@@ -173,10 +181,10 @@ class Game extends React.Component {
       );
     });
 
-    // statusを更新
+    // statusの定義
     let status;
-    if (winner) {
-      status = 'Winner: ' + winner;
+    if (settlement) {
+      status = 'Winner: ' + settlement.winner;
     } else {
       status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
     }
@@ -184,9 +192,11 @@ class Game extends React.Component {
     return (
       <div className="game">
         <div className="game-board">
+          {/* highlightCellsはsettlementがあればlineを返すなければ[]を返す */}
           <Board
             squares={current.squares}
             onClick={(i) => this.handleClick(i)}
+            highlightCells={settlement ? settlement.line : []}
           />
         </div>
         <div className="game-info">
@@ -232,8 +242,11 @@ function calculateWinner(squares) {
     const [a, b, c] = lines[i];
     // squareに書く番号を当てはめ、総当たりで調べる
     if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-      // 当てはまったら勝利のsquareを返す
-      return squares[a];
+      // 当てはまったら勝利のsquareと揃った列の情報も返す。
+      return {
+        winner: squares[a],
+        line: [a,b,c],
+      };
     }
   }
   // 当てはまらなかったらnullを返す
