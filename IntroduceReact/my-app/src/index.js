@@ -184,7 +184,12 @@ class Game extends React.Component {
     // statusの定義
     let status;
     if (settlement) {
-      status = 'Winner: ' + settlement.winner;
+      // isDrawで条件分岐
+      if (settlement.isDraw) {
+        status = 'Draw'
+      } else {
+        status = 'Winner: ' + settlement.winner;
+      }
     } else {
       status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
     }
@@ -242,13 +247,23 @@ function calculateWinner(squares) {
     const [a, b, c] = lines[i];
     // squareに書く番号を当てはめ、総当たりで調べる
     if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-      // 当てはまったら勝利のsquareと揃った列の情報も返す。
+      // 当てはまったら勝利のsquareと揃った列の情報も返す。当てはまらなかった場合のためにisDrawを定義
       return {
         winner: squares[a],
         line: [a,b,c],
+        isDraw: false,
       };
     }
   }
-  // 当てはまらなかったらnullを返す
+  // 上記に当てはまらない場合isDrawをtrueにする
+  // ここわからない
+  if (squares.filter((e) => !e).length === 0) {
+    return {
+      winner: null,
+      line: [],
+      isDraw: true,
+    };
+  }
+  // 全てに当てはまらなかったらnullを返す
   return null;
 }
